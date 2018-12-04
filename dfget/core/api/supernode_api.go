@@ -40,6 +40,7 @@ func NewSupernodeAPI() SupernodeAPI {
 		ServicePort: 8002,
 		Timeout:     5 * time.Second,
 		HTTPClient:  util.DefaultHTTPClient,
+
 	}
 }
 

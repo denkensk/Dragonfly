@@ -225,6 +225,7 @@ public class ProgressServiceImpl implements ProgressService {
      * @return
      */
     @Override
+    // 实际逻辑实现
     public ResultInfo parseAvaliablePeerTasks(String taskId, String cid) {
         String msg = null;
         if (StringUtils.isBlank(cid) || StringUtils.isBlank(taskId)) {
@@ -248,6 +249,8 @@ public class ProgressServiceImpl implements ProgressService {
             logger.error(msg);
             return new ResultInfo(ResultCode.UNKNOWN_ERROR, msg, null);
         }
+
+        // 同步锁，保证只有一个线程可以获取到
         synchronized (clientProgressValue) {
             BitSet clonedClientProgressValue = (BitSet)clientProgressValue.clone();
 
@@ -267,13 +270,18 @@ public class ProgressServiceImpl implements ProgressService {
             int pieceTotal = task.getPieceTotal();
             boolean cdnSuccess = task.isSuccess();
             int clientSucCount = clonedClientProgressValue.cardinality();
+
+
             if (cdnSuccess && clientSucCount == pieceTotal) {
                 Map<String, Object> finishInfo = new HashMap<String, Object>();
                 finishInfo.put("md5", task.getRealMd5());
                 finishInfo.put("fileLength", task.getFileLength());
                 return new ResultInfo(ResultCode.PEER_FINISH, finishInfo);
             }
+
+
             clonedCdnProgressValue.andNot(clonedClientProgressValue);
+
 
             List<Integer> availablePieces = new ArrayList<Integer>();
             for (int i = clonedCdnProgressValue.nextSetBit(0); i >= 0; i = clonedCdnProgressValue.nextSetBit(i + 1)) {
@@ -286,6 +294,7 @@ public class ProgressServiceImpl implements ProgressService {
                 }
             }
 
+
             if (availablePieces.isEmpty()) {
                 StringBuilder sb = new StringBuilder();
                 sb.append("client sucCount:").append(clientSucCount).append(",cdn status:")
@@ -293,6 +302,9 @@ public class ProgressServiceImpl implements ProgressService {
                     .append(cdnProgressValue.cardinality());
                 return new ResultInfo(ResultCode.PEER_WAIT, sb.toString(), null);
             }
+
+
+
             List<PieceTask> pieceTasks = new ArrayList<PieceTask>();
             Map<Integer, String> dstCidMap = progressRepo.getRunningPiece(cid);
             if (dstCidMap == null) {
@@ -301,17 +313,20 @@ public class ProgressServiceImpl implements ProgressService {
                 logger.error(msg);
                 return new ResultInfo(ResultCode.UNKNOWN_ERROR, msg, null);
             }
+
             List<Integer> invalidRunningPieces = new ArrayList<Integer>();
             for (Integer pieceNum : dstCidMap.keySet()) {
                 if (!fillPieceTasks(pieceTasks, task, dstCidMap.get(pieceNum), pieceNum)) {
                     invalidRunningPieces.add(pieceNum);
                 }
             }
+
             if (CollectionUtils.isNotEmpty(invalidRunningPieces)) {
                 for (Integer tmpPieceNum : invalidRunningPieces) {
                     dstCidMap.remove(tmpPieceNum);
                 }
             }
+
             int runningCount = pieceTasks.size();
             Map<Integer, List<Integer>> finishedCountMap = new TreeMap<Integer, List<Integer>>();
             if (runningCount < Constants.PEER_DOWN_LIMIT) {

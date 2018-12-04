@@ -48,17 +48,23 @@ public class CommonPeerDispatcher extends PeerDispatcherService {
         int requestResult = Integer.parseInt(result);
 
         dataGcService.updateAccessTime(taskId);
+        // 转化为对应的状态
         PeerTaskStatus peerTaskStatus = convertToPeerTaskStatus(requestStatus, requestResult);
         Assert.assertNotNull(peerTaskStatus, ResultCode.PARAM_ERROR, "convertToPeerTaskStatus fail");
+
+        // 等待
         if (peerTaskStatus.isWait()) {
             return processTaskStart(srcCid, taskId);
         } else if (peerTaskStatus.isRunning()) {
+            // 运行
             int pieceNum = RangeParseUtil.calculatePieceNum(range);
             Assert.assertTrue(pieceNum >= 0, ResultCode.PARAM_ERROR, "invalid range");
             PeerPieceStatus pieceStatus = convertToPeerPieceStatus(requestStatus, requestResult);
             Assert.assertNotNull(pieceStatus, ResultCode.PARAM_ERROR, "convertToPeerPieceStatus fail");
+
             return processRunning(srcCid, dstCid, taskId, pieceNum, pieceStatus);
         } else {
+            // 完成
             return processTaskFinish(srcCid, peerTaskStatus, taskId);
         }
     }

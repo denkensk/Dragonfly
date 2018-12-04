@@ -55,6 +55,7 @@ func Process(w http.ResponseWriter, r *http.Request) {
 	targetURL.RawQuery = ""
 
 	hostIP := util.ExtractHost(r.URL.Host)
+	log.Info("hostIP: " + hostIP)
 	switch hostIP {
 	case "127.0.0.1", "localhost", global.CommandLine.HostIP:
 		if len(global.CommandLine.Registry) > 0 {
