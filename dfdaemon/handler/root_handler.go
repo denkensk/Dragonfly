@@ -27,6 +27,7 @@ import (
 
 // Process makes the dfdaemon as a reverse proxy to download image layers by dragonfly
 func Process(w http.ResponseWriter, r *http.Request) {
+	log.Infof("request: $s", r)
 
 	if r.URL.Host == "" {
 		r.URL.Host = r.Host
@@ -48,6 +49,8 @@ func Process(w http.ResponseWriter, r *http.Request) {
 
 	}
 	log.Debugf("pre access:%s", r.URL.String())
+	log.Infof("pre access:%s", r.URL.String())
+
 
 	targetURL := new(url.URL)
 	*targetURL = *r.URL
@@ -75,6 +78,7 @@ func Process(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Debugf("post access:%s", targetURL.String())
+	log.Infof("post access:%s", targetURL.String())
 
 	// TODO: do we really need to construct this every time?
 	reverseProxy := httputil.NewSingleHostReverseProxy(targetURL)
